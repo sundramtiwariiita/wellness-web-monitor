@@ -76,6 +76,13 @@ def index():
 def root():
     return redirect(url_for('index'))
 
+@app.route('/healthz')
+def healthz():
+    return jsonify({
+        "status": "ok",
+        "service": "wellness-monitor-api"
+    }), 200
+
 @app.route("/api/addUser", methods=["POST"])
 def addUser():
     try:

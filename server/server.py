@@ -57,6 +57,13 @@ def index():
     connection.close()
     return f"Connected to MySQL, Server version: {data[0]}"
 
+@app.route('/healthz')
+def healthz():
+    return jsonify({
+        "status": "ok",
+        "service": "wellness-monitor-api"
+    }), 200
+
 @app.route("/addUser", methods=["POST"])
 def addUser():
     try:
