@@ -1,4 +1,19 @@
-const API = import.meta.env.VITE_API_BASE || `http://${window.location.hostname}:5000/api`;
+const normalizeApiBase = () => {
+    const explicitBase = import.meta.env.VITE_API_BASE?.trim();
+    if (explicitBase) {
+        return explicitBase.replace(/\/$/, "");
+    }
+
+    const hostOnly = import.meta.env.VITE_API_HOST?.trim();
+    if (hostOnly) {
+        const withProtocol = hostOnly.startsWith("http") ? hostOnly : `https://${hostOnly}`;
+        return `${withProtocol.replace(/\/$/, "")}/api`;
+    }
+
+    return `http://${window.location.hostname}:5000/api`;
+};
+
+const API = normalizeApiBase();
 
 
 import axios from 'axios';

@@ -22,14 +22,14 @@ import tempfile
 import subprocess
 
 app = Flask(__name__)
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = '12345678'
-app.config['MYSQL_DB'] = 'wellness_monitor'
-app.config['MYSQL_PORT'] = 3306 
+app.config['MYSQL_HOST'] = os.getenv('MYSQL_HOST', 'localhost')
+app.config['MYSQL_USER'] = os.getenv('MYSQL_USER', 'root')
+app.config['MYSQL_PASSWORD'] = os.getenv('MYSQL_PASSWORD', '12345678')
+app.config['MYSQL_DB'] = os.getenv('MYSQL_DB', 'wellness_monitor')
+app.config['MYSQL_PORT'] = int(os.getenv('MYSQL_PORT', '3306'))
 CORS(app)
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or "AIzaSyBjf56a6-EVDPU_hwW1D1eOv3Ib7R3NoWI"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL_CANDIDATES = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemma-3-4b-it"]
 THERAPIST_SYSTEM_INSTRUCTION = (
     "You are a calm, supportive therapist-style wellness assistant for a student wellness web app. "
@@ -706,4 +706,6 @@ def getAllTesters():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.getenv("PORT", "5000"))
+    debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    app.run(host="0.0.0.0", port=port, debug=debug)
