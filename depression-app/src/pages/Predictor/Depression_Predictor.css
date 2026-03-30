@@ -1,0 +1,14 @@
+.predictor-container {
+    min-height : 100vh;
+    overflow: auto;
+}
+
+.predictor-container button {
+    background: #F3BAA6;
+    color : #11294F;
+    width: 12rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    padding: 0.5rem 0.8rem 0.5rem 0.8rem;
+    cursor : pointer;
+}

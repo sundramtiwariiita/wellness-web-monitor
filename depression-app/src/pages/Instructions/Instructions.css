@@ -1,0 +1,29 @@
+.instructions-container {
+    min-height: 100vh;
+    overflow: auto;
+}
+
+.instructions-container .heading{
+    margin-top: 2rem;
+    color: #F3BAA6;
+}
+
+.instructions-container .btn {
+    background: #F3BAA6;
+    color : #11294F;
+}
+
+.instructions-container .instructions .list {
+    display: flex;
+    flex-direction: column;
+    align-items: left;
+    margin-left: 30px;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.instructions-container .instructions .list h2 {
+    font-size: 1.3rem;
+    font-weight: 300;
+
+}

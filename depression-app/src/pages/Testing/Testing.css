@@ -1,0 +1,64 @@
+.testing-container {
+    min-height : 100vh;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 5px;
+}
+
+table {
+    margin-top: 10px;
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+}
+  
+td, th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+}
+  
+.testing-container h2{
+    color: #F3BAA6;
+}
+
+.testing-container .date-export-container{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 2rem;
+    gap: 2rem;
+}
+
+.testing-container .date-export-container .date-container{
+    display: flex;
+    flex-direction: row;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.testing-container .date-export-container .date-container h3{
+    font-weight: 300;
+}
+
+.testing-container .date-export-container .date-container .date-filter{
+    padding: 0.5rem;
+    border: 1px solid #dddddd;
+    background: #11294F;
+    border-radius: 0.5rem;
+    color: white;
+}
+
+.testing-container .date-export-container .date-container .reset-btn {
+    color: #11294F;
+    background: #F3BAA6;
+    border: 1px solid #dddddd;
+    font-size: 0.9rem;
+}
+.testing-container .date-export-container .export-container button{
+    color: #11294F;
+    background: #F3BAA6;
+    border: 1px solid #dddddd;
+    font-size: 0.9rem;
+}

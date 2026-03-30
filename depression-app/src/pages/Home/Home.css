@@ -1,0 +1,46 @@
+.home-container {
+    margin-left: 0;
+    display: flex;
+    flex-direction: column;
+    background: #11294F;
+    color: white;
+    min-height: 100vh;
+    font-family: 'Roboto', sans-serif;
+    width: 100%;
+    overflow: auto;
+}
+
+.home-container  .heading{
+    display: flex;
+    color: #F3BAA6;
+    font-weight: bolder;
+    flex-direction: column;
+    align-items: center;
+    font-size: 3rem;
+    padding: 1rem;
+}
+
+.home-container .cards{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 4rem;
+    margin-top: 5rem;
+}
+
+.home-container .cards .depression-detection, .chatbot-therapy, .results{
+    border: 1.5px solid #F3BAA6;
+    border-radius: 8px;
+    padding: 3rem;
+    width: 25rem;
+}
+
+.home-container .cards .depression-detection img, .chatbot-therapy img, .results img{
+    width: 20rem;
+    height: 16rem;
+}
+
+.home-container .cards .depression-detection h4, .chatbot-therapy h4, .results h4{
+    color: #F3BAA6;
+}
+

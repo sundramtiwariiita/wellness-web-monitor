@@ -1,0 +1,34 @@
+[
+    {
+        "num": 1,
+        "question": "Over the past two weeks, how often have you felt little interest or pleasure in doing things that you usually enjoy?"
+    },
+    {
+        "num": 2,
+        "question": "Are you feeling down, depressed, irritable, or hopeless in the past few weeks?"
+    },
+    {
+        "num": 3,
+        "question" : "Have you experienced significant changes in your sleep patterns over the past two weeks, such as trouble falling or staying asleep, or sleeping too much?"
+    },
+    {
+        "num": 4,
+        "question": "How often have you felt tired or had little energy over the past two weeks?"
+    },
+    {
+        "num": 5,
+        "question": "Have you noticed changes in your appetite or weight (either loss or gain) during the past two weeks?"
+    },
+    {
+        "num": 6,
+        "question" : "How often have you felt bad about yourself, that you are a failure, or have let yourself or your family down in the past two weeks?"
+    },
+    {
+        "num": 7,
+        "question" : "Over the past two weeks, have you had difficulty concentrating on things, such as reading the newspaper or watching television?"
+    },
+    {
+        "num" : 8,
+        "question" : "Have you experienced psychomotor symptoms, such as moving or speaking so slowly that others could have noticed, or the opposite—being so fidgety or restless that you have been moving around more than usual in the past two weeks?"
+    }
+]
