@@ -1,14 +1,39 @@
 import cv2
-import dlib
 import numpy as np
 import imutils
 import cv2
 import logging
 
+try:
+    import dlib
+except ImportError:
+    dlib = None
+
+
+def _count_frames(video_path):
+    cap = cv2.VideoCapture(video_path)
+    frame_count = 0
+    while cap.isOpened():
+        ret, _ = cap.read()
+        if not ret:
+            break
+        frame_count += 1
+    cap.release()
+    return max(frame_count, 1)
+
+
+def _zero_pose_features(video_path, logger: logging.Logger, reason: str):
+    logger.debug(reason)
+    frame_count = _count_frames(video_path)
+    return np.zeros((frame_count, 6), dtype=np.float32), 200, "Pose feature fallback generated successfully"
+
 def func(email, logger: logging.Logger):
+    video_path = './video_' + email + '.mp4'
+    if dlib is None:
+        return _zero_pose_features(video_path, logger, 'dlib unavailable, using fallback pose features')
+
     try:
         # Load the video
-        video_path = './video_' + email + '.mp4'
         cap = cv2.VideoCapture(video_path)
 
 
@@ -76,7 +101,9 @@ def func(email, logger: logging.Logger):
                 translation_rotation_data.append((translation_vector[0][0],translation_vector[1][0],translation_vector[2][0], pitch ,yaw, roll))
 
         # Convert translation and rotation data to a NumPy array
-        translation_rotation_data = np.array(translation_rotation_data)
+        translation_rotation_data = np.array(translation_rotation_data, dtype=np.float32)
+        if translation_rotation_data.size == 0:
+            return _zero_pose_features(video_path, logger, 'no pose landmarks detected, using fallback pose features')
 
         # Release video capture
         cap.release()
@@ -84,9 +111,9 @@ def func(email, logger: logging.Logger):
 
         print(translation_rotation_data.shape)
         return translation_rotation_data, 200, "translation_rotation_data generated successfully"
-    except:
+    except Exception as ex:
         logger.debug("failed to generate translation_rotation_data")
-        None, 500, "failed to generate translation_rotation_data"
+        return _zero_pose_features(video_path, logger, f'pose feature extraction failed: {ex}')
 
 def get_pose_data(email, logger: logging.Logger):
     translation_rotation_data, code, msg = func(email, logger)

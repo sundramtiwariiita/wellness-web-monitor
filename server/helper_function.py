@@ -1,9 +1,33 @@
 import os
 import base64
 import subprocess
+import shutil
 from io import BytesIO
 import logging
-from moviepy.editor import VideoFileClip
+
+try:
+    import imageio_ffmpeg
+except ImportError:
+    imageio_ffmpeg = None
+
+
+def resolve_ffmpeg_binary():
+    candidates = [
+        os.getenv("FFMPEG_BINARY"),
+        shutil.which("ffmpeg"),
+    ]
+
+    if imageio_ffmpeg is not None:
+        try:
+            candidates.append(imageio_ffmpeg.get_ffmpeg_exe())
+        except Exception:
+            pass
+
+    for candidate in candidates:
+        if candidate:
+            return candidate
+
+    return "ffmpeg"
 
 def convert_blob_to_mp4(blob, email, logger: logging.Logger):
     # try:
@@ -47,8 +71,15 @@ def convert_blob_to_mp4(blob, email, logger: logging.Logger):
 
         # Run ffmpeg command to convert webm to mp4
             
-        current_file_path = os.path.abspath(__file__)
-        process = subprocess.run(['ffmpeg', '-i', blob, '-c:v', 'copy', '-c:a', 'aac', '-strict', 'experimental', fileName])
+        ffmpeg_binary = resolve_ffmpeg_binary()
+        process = subprocess.run(
+            [ffmpeg_binary, '-y', '-i', blob, '-c:v', 'copy', '-c:a', 'aac', '-strict', 'experimental', fileName],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        logger.debug(process.stdout)
+        logger.debug(process.stderr)
         try:
             with open(fileName, 'rb') as mp4_file:
                 mp4_content = mp4_file.read()

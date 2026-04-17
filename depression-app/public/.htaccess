@@ -1,0 +1,15 @@
+RewriteEngine On
+
+# Do not allow direct web access to the backend directory.
+RewriteRule ^backend(?:/|$) - [F,L]
+
+# Proxy backend API requests to the local Flask/Gunicorn process.
+RewriteRule ^api$ http://127.0.0.1:5000/api/ [P,L]
+RewriteRule ^api/(.*)$ http://127.0.0.1:5000/api/$1 [P,L]
+
+# Serve the React app for client-side routes.
+RewriteBase /
+RewriteRule ^index\.html$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]

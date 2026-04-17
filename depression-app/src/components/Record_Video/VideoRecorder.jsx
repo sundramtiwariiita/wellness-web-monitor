@@ -17,6 +17,8 @@ const VideoRecorder = () => {
 	const [videoChunks, setVideoChunks] = useState([]);
 	const [displayCameraOption, setDisplayCameraOption] = useState(true);
 	const [getPredictions, setGetPredictions] = useState(false);
+	const [uploadProgress, setUploadProgress] = useState(0);
+	const [uploadStatus, setUploadStatus] = useState("Preparing upload...");
 	const navigate = useNavigate();
 
 	useEffect(() => {
@@ -27,8 +29,10 @@ const VideoRecorder = () => {
 
 	const getCameraPermission = async () => {
 		setRecordedVideo(null);
+		setUploadProgress(0);
+		setUploadStatus("Preparing upload...");
 		if (!window.isSecureContext && window.location.hostname !== "localhost") {
-			window.alert("Camera and microphone access only works on localhost or HTTPS. Please open the app on http://localhost:5173/record on this PC.");
+			window.alert("Camera and microphone access requires HTTPS or localhost. Open this page over HTTPS on the live site or use localhost for local testing.");
 			return;
 		}
 
@@ -128,42 +132,63 @@ const VideoRecorder = () => {
 			const response = await fetch(videoUrl);
 			const blob = await response.blob();
 			setGetPredictions(true);
+			setUploadProgress(0);
+			setUploadStatus("Uploading video...");
 	
 			const CHUNK_SIZE = 1024 * 512;
 			const totalChunks = Math.ceil(blob.size / CHUNK_SIZE);
 			let start = 0;
 			let chunkIndex = 0;
-			let data;
+			let lastResponse;
 
 			try{
 				while (start < blob.size) {
 					const chunk = blob.slice(start, start + CHUNK_SIZE);
-					data = await convertVideo(chunk, totalChunks, chunkIndex, email);
-					console.log(data);
-					console.log(data?.code);
+					const chunkStart = start;
+					const chunkResponse = await convertVideo(
+						chunk,
+						totalChunks,
+						chunkIndex,
+						email,
+						(progressEvent) => {
+							const chunkUploadFraction = progressEvent.total
+								? progressEvent.loaded / progressEvent.total
+								: 0;
+							const uploadedBytes = chunkStart + (chunk.size * chunkUploadFraction);
+							const percent = Math.min(99, Math.round((uploadedBytes / blob.size) * 100));
+							setUploadProgress(percent);
+							setUploadStatus("Uploading video...");
+						}
+					);
+					lastResponse = chunkResponse;
+					console.log(`Uploaded chunk ${chunkIndex + 1} of ${totalChunks}`, chunkResponse);
 					start += CHUNK_SIZE;
 					chunkIndex++;
 				}
+				setUploadProgress(100);
+				setUploadStatus("Upload complete. Finalizing prediction...");
 			} catch (error) {
 				window.alert("There was a problem processing your recording. Please try again.");
-				navigate("/instructions")
 				setGetPredictions(false);
+				setUploadProgress(0);
+				setUploadStatus("Preparing upload...");
+				navigate("/instructions")
 				return;
 			}
 
 			// const data2 = await assembleVideo(email);
-	        
+
 			console.log('all chunks sent')
-			// const data = await uploadVideo(email);
-			// console.log(data);
 			setGetPredictions(false);
+			setUploadProgress(0);
+			setUploadStatus("Preparing upload...");
 		
-			if(data?.data?.code === 200){
+			if(lastResponse?.code === 200){
 				setGetPredictions(false);
-				console.log(data);
+				console.log(lastResponse);
 				console.log("results");
 				navigate("/home")
-			} else if(data?.data?.code === 500 || data?.message === 'Request failed with status code 500'){
+			} else if(lastResponse?.code === 500){
 				window.alert('Please adjust your background lighting for better video quality')
 				navigate("/instructions")
 			} else {
@@ -173,6 +198,8 @@ const VideoRecorder = () => {
 		} catch (error) {
 			console.error("Error while uploading recording:", error);
 			setGetPredictions(false);
+			setUploadProgress(0);
+			setUploadStatus("Preparing upload...");
 			navigate("/home")
 		}
 	}
@@ -194,8 +221,17 @@ const VideoRecorder = () => {
 						{getPredictions && (
 							<>
 								<div className="like-modal-overlay">
-									<div className="like-modal-content" style={{ height: "60vh" }}>
-										<Loader type="bubble-top" title={"Processing Video...Kindly check after 45-50 minutes"} size={100}/>
+									<div className="like-modal-content upload-progress-modal" style={{ height: "60vh" }}>
+										<Loader type="bubble-top" title={"Uploading and processing your video"} size={100}/>
+										<p className="upload-status-text">{uploadStatus}</p>
+										<div className="upload-progress-track" aria-hidden="true">
+											<div
+												className="upload-progress-fill"
+												style={{ width: `${uploadProgress}%` }}
+											></div>
+										</div>
+										<p className="upload-progress-label">{uploadProgress}% uploaded</p>
+										<p className="upload-progress-note">Please keep this page open until the upload finishes.</p>
 									</div>
 								</div>
 							</>

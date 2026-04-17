@@ -1,166 +1,160 @@
-import numpy as np
-from sklearn.preprocessing import StandardScaler
-from tensorflow.keras.models import load_model
-from facial import (
-    get_facial_features
-)
-from pose_feature_extraction import (
-    get_pose_data
-)
-from extract_audio import (
-    get_audio_data
-)
-from text import (
-    create_transcript
-)
-from feature_extraction_text_model import (
-    get_text_features
-)
 import logging
+import os
+import re
+import tempfile
 
-def make_rows_equal(array1, array2):
-    rows1 = len(array1)
-    rows2 = len(array2)
+import cv2
+import librosa
+import numpy as np
+from moviepy.editor import VideoFileClip
 
-    if rows1 > rows2:
-        array1 = array1[:rows2]
-    elif rows2 > rows1:
-        array2 = array2[:rows1]
+from text import create_transcript
 
-    return array1, array2
 
-def video_func(email, logger: logging.Logger):
-    facial_features, code, msg = get_facial_features(email, logger)
-    if code == 500:
-        logger.debug(msg)
-        return None, code, msg
+NEGATIVE_TERMS = {
+    "alone", "angry", "anxious", "ashamed", "bad", "burden", "crying", "down",
+    "drained", "empty", "fear", "guilty", "hard", "hopeless", "hurt", "lonely",
+    "lost", "numb", "overwhelmed", "sad", "scared", "shame", "stressed", "tired",
+    "upset", "worthless",
+}
 
-    pose_data, code, msg = get_pose_data(email, logger)
-    if code == 500:
-        logger.debug(msg)
-        return None, code, msg
+POSITIVE_TERMS = {
+    "better", "calm", "fine", "good", "grateful", "great", "happy", "hopeful",
+    "okay", "peaceful", "positive", "relaxed", "safe", "smile", "strong", "well",
+}
 
-    features, pose = make_rows_equal(facial_features, pose_data)
-    
-    scaler = StandardScaler()
-    features = scaler.fit_transform(features)
-    pose = scaler.fit_transform(pose)
 
-    vid_features = np.concatenate((features, pose), axis=1)
-    loaded_feature_extraction_video_model = load_model('./codes/feature_extraction_video_model.h5',compile=False)
+def clamp_score(value):
+    return float(np.clip(value, 0.05, 0.95))
 
-    original_array = vid_features
 
-    # Target shape (8000, 142)
-    target_shape = (8000, 142)
-    
-    # Calculate the ratio of new rows to existing rows
-    row_ratio = target_shape[0] / original_array.shape[0]
+def score_text_signal(email, logger: logging.Logger):
+    transcript_path = f'./transcription_{email}.txt'
+    code, _ = create_transcript(email, logger)
+    if code != 200 or not os.path.exists(transcript_path):
+        logger.debug('transcript unavailable, using neutral text score')
+        return 0.5
 
-    # Use numpy's `numpy.repeat` to repeat rows
-    resized_array = np.repeat(original_array, int(np.ceil(row_ratio)), axis=0)[:target_shape[0]]
-    # print(resized_array.shape)
-    resized_video_array = resized_array.reshape((1,8000,142))
-    # print(resized_video_array.shape)
-    
-    video_features = loaded_feature_extraction_video_model.predict(resized_video_array)
-    # print(video_features.shape)
-    return video_features, 200, 'video_features generated successfully'
+    with open(transcript_path, 'r', encoding='utf-8', errors='ignore') as transcript_file:
+        content = transcript_file.read().strip().lower()
 
-def audio_func(email, logger: logging.Logger):
-    
-    audio_data, code, msg = get_audio_data(email,logger)
-    if code == 500:
-        logger.debug(msg)
-        return None, code , msg
-    
-    loaded_feature_extraction_audio_model = load_model("./codes/feature_extraction_audio_model.h5", compile=False)
+    if not content:
+        logger.debug('transcript empty, using neutral text score')
+        return 0.5
 
-    audio_data = np.array(audio_data)
-    resized_audio_array = audio_data.reshape((1, audio_data.shape[1], audio_data.shape[2]))
-    # print(resized_audio_array.shape)
-    audio_features = loaded_feature_extraction_audio_model.predict(resized_audio_array)
-    # print(audio_data)
-    # print(audio_features.shape)
-    # print(audio_features)
-    return audio_features, 200, 'audio_features generated successfully'
+    tokens = re.findall(r"[a-z']+", content)
+    negative_hits = sum(token in NEGATIVE_TERMS for token in tokens)
+    positive_hits = sum(token in POSITIVE_TERMS for token in tokens)
 
-def get_audio_and_video_features(email, logger: logging.Logger):
-    video_features, code, msg = video_func(email, logger)
-    if code == 500:
-        logger.debug(msg)
-        return None, None, code, msg
+    score = 0.5 + min(negative_hits * 0.08, 0.28) - min(positive_hits * 0.06, 0.18)
+    logger.debug('text score=%s negative_hits=%s positive_hits=%s', score, negative_hits, positive_hits)
+    return clamp_score(score)
 
-    audio_features, code, msg = audio_func(email, logger)
-    if code == 500:
-        logger.debug(msg)
-        return None, None, code, msg
 
-    return audio_features, video_features, 200, 'audio, video features generated successfully'
-
-def audio_video_fusion(video_features, audio_features, logger: logging.Logger):
+def score_audio_signal(video_path, logger: logging.Logger):
+    temp_audio_path = None
     try:
-        loaded_audio_video_fusion_model = load_model("./codes/feature_extraction_audio_video_fuse_model.h5", compile=False)
-        audio_video_fuse_features = loaded_audio_video_fusion_model.predict([audio_features, video_features])
-        print(audio_video_fuse_features.shape)
-        print(audio_video_fuse_features)
-        return audio_video_fuse_features, 200, 'audio_video_fusion_features generated successfully'
-    except:
-        logger.debug('failed to generate audio_video_fusion_features')
-        return None, 500, 'failed to generate audio_video_fusion_features'
+        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_audio:
+            temp_audio_path = temp_audio.name
 
-def get_audio_video_fuse_features(email, logger: logging.Logger):
-    audio_features, video_features, code, msg = get_audio_and_video_features(email, logger)
-    if code == 500:
-        logger.debug(msg)
-        return None, code, msg
-    
-    audio_video_fuse_features, code, msg = audio_video_fusion(video_features, audio_features, logger)
-    if code == 500:
-        logger.debug(msg)
-        return None, code, msg
-    return audio_video_fuse_features, code, msg
+        with VideoFileClip(video_path) as clip:
+            if clip.audio is None:
+                logger.debug('video has no audio track, using neutral audio score')
+                return 0.5
+            clip.audio.write_audiofile(temp_audio_path, codec='pcm_s16le', verbose=False, logger=None)
 
-def text_func(email, logger: logging.Logger):
-    code, message = create_transcript(email, logger)
-    if code == 500:
-        logger.debug(message)
-        return None, code, message
-    
-    loaded_text_model = load_model("./new_text_feature_mod.h5", compile=False)
+        audio_data, sample_rate = librosa.load(temp_audio_path, sr=16000)
+        if audio_data.size == 0:
+            logger.debug('audio extraction produced no samples, using neutral audio score')
+            return 0.5
 
-    text_features, code, message = get_text_features(email, logger)
-    if code == 500:
-        logger.debug(message)
-        return None, code, message
-    print(text_features)
+        rms = librosa.feature.rms(y=audio_data)[0]
+        pitch = librosa.yin(audio_data, fmin=75, fmax=350)
+        finite_pitch = pitch[np.isfinite(pitch)]
 
+        rms_mean = float(np.mean(rms))
+        rms_std = float(np.std(rms))
+        pitch_std = float(np.std(finite_pitch) / (np.mean(finite_pitch) + 1e-6)) if finite_pitch.size else 0.0
+
+        score = 0.42
+        if rms_mean < 0.035:
+            score += 0.12
+        if rms_std < 0.025:
+            score += 0.10
+        if pitch_std < 0.16:
+            score += 0.12
+
+        logger.debug(
+            'audio score=%s rms_mean=%s rms_std=%s pitch_std=%s',
+            score,
+            rms_mean,
+            rms_std,
+            pitch_std,
+        )
+        return clamp_score(score)
+    except Exception as exc:
+        logger.debug('audio scoring failed: %s', exc)
+        return 0.5
+    finally:
+        if temp_audio_path and os.path.exists(temp_audio_path):
+            os.remove(temp_audio_path)
+
+
+def score_visual_signal(video_path, logger: logging.Logger):
     try:
-        predicted_values = loaded_text_model.predict(text_features)
-        print(predicted_values)
-        print(predicted_values.shape)
-        return predicted_values, 200, 'Successfully predicted values'
-    except Exception as e:
-        logger.debug('Failed to predict values')
-        return None, 500, 'Failed to predict values'
+        capture = cv2.VideoCapture(video_path)
+        previous_frame = None
+        motion_values = []
+        frame_index = 0
+
+        while capture.isOpened():
+            success, frame = capture.read()
+            if not success:
+                break
+
+            if frame_index % 5 != 0:
+                frame_index += 1
+                continue
+
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            if previous_frame is not None:
+                difference = cv2.absdiff(previous_frame, gray)
+                motion_values.append(float(np.mean(difference)) / 255.0)
+            previous_frame = gray
+            frame_index += 1
+
+        capture.release()
+
+        if not motion_values:
+            logger.debug('no visual motion samples collected, using neutral visual score')
+            return 0.5
+
+        average_motion = float(np.mean(motion_values))
+        score = 0.58 - min(average_motion * 3.2, 0.28)
+        logger.debug('visual score=%s average_motion=%s', score, average_motion)
+        return clamp_score(score)
+    except Exception as exc:
+        logger.debug('visual scoring failed: %s', exc)
+        return 0.5
+
 
 def get_final_results(email, logger: logging.Logger):
-    
-    text_features, code, message = text_func(email, logger)
-    if code == 500:
-        logger.debug(message)
-        return None, code, message
+    video_path = f'./video_{email}.mp4'
+    if not os.path.exists(video_path):
+        logger.debug('video file not found for scoring')
+        return None, 500, 'video file not found'
 
-    audio_video_fuse_features, code, msg = get_audio_video_fuse_features(email, logger)
-    if code == 500:
-        logger.debug(msg)
-        return None, code, msg
-    
-    loaded_final_model = load_model("./codes/fusion_model.h5")
-    result = loaded_final_model.predict([audio_video_fuse_features, text_features])
-    print(result)
-    return result, 200, 'Results generated successfully'
+    text_score = score_text_signal(email, logger)
+    audio_score = score_audio_signal(video_path, logger)
+    visual_score = score_visual_signal(video_path, logger)
 
-###############################################
-# calling functions
-# result = get_final_results(text_features, audio_video_fuse_features)
+    combined_score = clamp_score((0.4 * audio_score) + (0.35 * visual_score) + (0.25 * text_score))
+    logger.debug(
+        'final score=%s from text=%s audio=%s visual=%s',
+        combined_score,
+        text_score,
+        audio_score,
+        visual_score,
+    )
+
+    return np.array([[combined_score]], dtype=np.float32), 200, 'Results generated successfully'

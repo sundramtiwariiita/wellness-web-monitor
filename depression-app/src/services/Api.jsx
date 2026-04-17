@@ -1,19 +1,4 @@
-const normalizeApiBase = () => {
-    const explicitBase = import.meta.env.VITE_API_BASE?.trim();
-    if (explicitBase) {
-        return explicitBase.replace(/\/$/, "");
-    }
-
-    const hostOnly = import.meta.env.VITE_API_HOST?.trim();
-    if (hostOnly) {
-        const withProtocol = hostOnly.startsWith("http") ? hostOnly : `https://${hostOnly}`;
-        return `${withProtocol.replace(/\/$/, "")}/api`;
-    }
-
-    return `http://${window.location.hostname}:5000/api`;
-};
-
-const API = normalizeApiBase();
+const API = import.meta.env.VITE_API_BASE || "/api";
 
 
 import axios from 'axios';
@@ -97,7 +82,7 @@ export const uploadVideo = async (email) => {
 
 
 // video -- chunk
-export const convertVideo = async (chunk, totalChunks, chunkIndex, email) => {
+export const convertVideo = async (chunk, totalChunks, chunkIndex, email, onUploadProgress) => {
     try {
         const formData = new FormData();
         formData.append('chunk', chunk);
@@ -105,11 +90,13 @@ export const convertVideo = async (chunk, totalChunks, chunkIndex, email) => {
         formData.append('chunkIndex', chunkIndex);
         formData.append('email', email);
 
-        const data = await instance.post(`/convertVideo`, formData);
-        return data;
+        const response = await instance.post(`/convertVideo`, formData, {
+            onUploadProgress,
+        });
+        return response.data;
     } catch (error) {
         console.error('Error while converting video:', error.message);
-        return error;
+        throw error;
     }
 }
 

@@ -1,12 +1,14 @@
 .video-controls button {
-    background: #F3BAA6;
-    color : #11294F;
+    background: #d8ebe3;
+    color : #1f3c34;
+    border: 1px solid #b6d1c6;
 }
 
 .recorded-player button {
     margin-top: 2rem;
-    background: #F3BAA6;
-    color : #11294F;
+    background: #d8ebe3;
+    color : #1f3c34;
+    border: 1px solid #b6d1c6;
 }
 
 .like-modal-overlay {
@@ -15,7 +17,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background: rgba(24, 35, 43, 0.48);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -23,14 +25,14 @@
   
   .like-modal-content {
     position: relative;
-    /* background-color: white; */
+    background: linear-gradient(180deg, #f6fbf8 0%, #e7f0ed 100%);
     width: 80%;
     max-width: 800px;
     max-height: 20%;
-    /* overflow: auto; */
     padding: 20px;
-    border-radius: 5px;
-    /* box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5); */
+    border-radius: 18px;
+    box-shadow: 0 18px 48px rgba(20, 34, 31, 0.16);
+    border: 1px solid rgba(97, 129, 118, 0.14);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -41,7 +43,46 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #F3BAA6;
-    color: #11294F;
+    background: #d8ebe3;
+    color: #1f3c34;
+    border: 1px solid #b6d1c6;
+}
+
+.upload-progress-modal {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+}
+
+.upload-status-text,
+.upload-progress-label,
+.upload-progress-note {
+    margin: 0;
+    color: #29413b;
+}
+
+.upload-progress-track {
+    width: min(420px, 100%);
+    height: 12px;
+    border-radius: 999px;
+    background: rgba(79, 115, 103, 0.16);
+    overflow: hidden;
+}
+
+.upload-progress-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #79b8a2 0%, #9fc7bb 55%, #b8d8ce 100%);
+    transition: width 0.2s ease;
+}
+
+.upload-progress-label {
+    font-weight: 700;
+}
+
+.upload-progress-note {
+    max-width: 420px;
+    font-size: 0.95rem;
+    opacity: 0.84;
 }
 

@@ -20,11 +20,11 @@ import tempfile
 import subprocess
 
 app = Flask(__name__)
-app.config['MYSQL_HOST'] = os.getenv('MYSQL_HOST', 'localhost')
-app.config['MYSQL_USER'] = os.getenv('MYSQL_USER', 'root')
-app.config['MYSQL_PASSWORD'] = os.getenv('MYSQL_PASSWORD', '12345678')
-app.config['MYSQL_DB'] = os.getenv('MYSQL_DB', 'wellness_monitor')
-app.config['MYSQL_PORT'] = int(os.getenv('MYSQL_PORT', '3306'))
+app.config['MYSQL_HOST'] = 'localhost'
+app.config['MYSQL_USER'] = 'root'
+app.config['MYSQL_PASSWORD'] = '12345678'
+app.config['MYSQL_DB'] = 'wellness_monitor'
+app.config['MYSQL_PORT'] = 3306 
 CORS(app)
 
 # Set up logging
@@ -56,13 +56,6 @@ def index():
     cursor.close()
     connection.close()
     return f"Connected to MySQL, Server version: {data[0]}"
-
-@app.route('/healthz')
-def healthz():
-    return jsonify({
-        "status": "ok",
-        "service": "wellness-monitor-api"
-    }), 200
 
 @app.route("/addUser", methods=["POST"])
 def addUser():
@@ -240,8 +233,6 @@ def convertToMP4():
         return jsonify({'message': str(ex), 'code': 500}), 500
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "5000"))
-    debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"
-    app.run(host="0.0.0.0", port=port, debug=debug)
+    app.run(host="0.0.0.0", port=5000, debug=True)
 
 

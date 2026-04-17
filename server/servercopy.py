@@ -5,16 +5,15 @@ import json
 import os
 import requests
 from werkzeug.security import generate_password_hash, check_password_hash
-from moviepy.editor import VideoFileClip
 from io import BytesIO
 from helper_function import (
     convert_blob_to_mp4,
-    delete_file
+    delete_file,
+    resolve_ffmpeg_binary,
 )
 import datetime
 import logging
 import random
-import cv2
 import shutil
 import base64
 import io
@@ -29,7 +28,7 @@ app.config['MYSQL_DB'] = os.getenv('MYSQL_DB', 'wellness_monitor')
 app.config['MYSQL_PORT'] = int(os.getenv('MYSQL_PORT', '3306'))
 CORS(app)
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL_CANDIDATES = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemma-3-4b-it"]
 THERAPIST_SYSTEM_INSTRUCTION = (
     "You are a calm, supportive therapist-style wellness assistant for a student wellness web app. "
@@ -45,11 +44,12 @@ THERAPIST_SYSTEM_INSTRUCTION = (
 log_file_path = 'main.log'
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-file_handler = logging.FileHandler(log_file_path)
-file_handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+if not logger.handlers:
+    file_handler = logging.FileHandler(log_file_path)
+    file_handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
 
 # MySQL configurations
 def connect_db():
@@ -58,7 +58,8 @@ def connect_db():
         user=app.config['MYSQL_USER'],
         password=app.config['MYSQL_PASSWORD'],
         db=app.config['MYSQL_DB'],
-        port=app.config['MYSQL_PORT']
+        port=app.config['MYSQL_PORT'],
+        charset='utf8mb4'
     )
 
 @app.route('/api/')
@@ -72,16 +73,14 @@ def index():
     return f"Connected to MySQL, Server version: {data[0]}"
 
 
+@app.route('/api/health', methods=['GET'])
+def health():
+    return jsonify({'status': 'ok'}), 200
+
+
 @app.route('/')
 def root():
     return redirect(url_for('index'))
-
-@app.route('/healthz')
-def healthz():
-    return jsonify({
-        "status": "ok",
-        "service": "wellness-monitor-api"
-    }), 200
 
 @app.route("/api/addUser", methods=["POST"])
 def addUser():
@@ -243,6 +242,16 @@ UPLOAD_FOLDER = os.path.dirname(os.path.realpath(__file__))
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 completed_chunks = {}
 
+
+def reset_upload_state(email, total_chunks):
+    video_chunks[email] = [None] * total_chunks
+    completed_chunks[email] = set()
+
+
+def clear_upload_state(email):
+    video_chunks.pop(email, None)
+    completed_chunks.pop(email, None)
+
 def assembleVideo(email):
     try:
         if email not in video_chunks or None in video_chunks[email]:
@@ -251,16 +260,31 @@ def assembleVideo(email):
             return jsonify({'error': 'Video chunks missing'}), 400
         logger.debug('Assembling')
         temp_dir = tempfile.mkdtemp()
-        for i, chunk_data in enumerate(video_chunks[email]):
-            chunk_path = os.path.join(temp_dir, f'chunk_{i}.webm')
-            with open(chunk_path, 'wb') as f:
-                f.write(chunk_data)
-
+        input_webm_path = os.path.join(temp_dir, f'video_{email}.webm')
         output_path = os.path.join(app.config['UPLOAD_FOLDER'], f'video_{email}.mp4')
-        cmd = ['ffmpeg', '-y', '-i', f'concat:{"|".join([os.path.join(temp_dir, f"chunk_{i}.webm") for i in range(len(video_chunks[email]))])}', '-c:v', 'libx264', '-preset', 'slow', output_path]
-        res = subprocess.run(cmd,
-        capture_output=True,
-        text=True)
+        with open(input_webm_path, 'wb') as assembled_video:
+            for chunk_data in video_chunks[email]:
+                assembled_video.write(chunk_data)
+
+        ffmpeg_binary = resolve_ffmpeg_binary()
+        cmd = [
+            ffmpeg_binary,
+            '-y',
+            '-i',
+            input_webm_path,
+            '-c:v',
+            'libx264',
+            '-preset',
+            'slow',
+            '-c:a',
+            'aac',
+            output_path,
+        ]
+        res = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+        )
         logger.debug(res.stdout)
         logger.debug(res.stderr)
         logger.debug(os.path.exists(output_path))
@@ -268,58 +292,76 @@ def assembleVideo(email):
         shutil.rmtree(temp_dir)
         del video_chunks[email]
         del completed_chunks[email]
+        if res.returncode != 0 or not os.path.exists(output_path):
+            logger.debug('Video assembly failed during ffmpeg conversion')
+            return "Video assembly failed", "", 500
         logger.debug(output_path)
         logger.debug('Video assembled successfully')
         return "Video assembled successfully",output_path, 200
 
     except Exception as e:
+        logger.exception('assembleVideo failed for %s', email)
         return "Video assembly failed", "", 500
 
 
 @app.route("/api/convertVideo", methods=["POST"])
 def convertVideo():
+    email = None
+    total_chunks = None
+    chunk_index = None
     try: 
         chunk = request.files['chunk']
         total_chunks = int(request.form['totalChunks'])
         chunk_index = int(request.form['chunkIndex'])
         email = request.form['email']
 
-        if email not in video_chunks:
-            video_chunks[email] = [None] * total_chunks
-            completed_chunks[email] = []
+        if total_chunks <= 0:
+            return jsonify({'message': 'Invalid total chunks', 'code': 400}), 400
+
+        if chunk_index < 0 or chunk_index >= total_chunks:
+            clear_upload_state(email)
+            return jsonify({'message': 'Invalid chunk index', 'code': 400}), 400
+
+        if (
+            email not in video_chunks
+            or email not in completed_chunks
+            or chunk_index == 0
+            or len(video_chunks[email]) != total_chunks
+        ):
+            reset_upload_state(email, total_chunks)
 
         video_chunks[email][chunk_index] = chunk.read()
 
-        logger.debug('Chunk uploaded successfully')
-        completed_chunks[email].append(chunk_index)
+        logger.debug('Chunk %s/%s uploaded successfully for %s', chunk_index + 1, total_chunks, email)
+        completed_chunks[email].add(chunk_index)
 
         if len(completed_chunks[email]) == total_chunks:
             logger.debug("assemble video called")
             msg, response, code = assembleVideo(email)
             if code == 500:
-                #video_chunks[email] = []
-                #completed_chunks = []
+                clear_upload_state(email)
                 return jsonify({'message': 'Assembling of video not done', 'error': response}), 500
             else:
                 msg, response, code = getVideo(email)
                 if code == 500:
-                    #video_chunks[email] = []
-                    #completed_chunks[email] = []
+                    clear_upload_state(email)
                     return jsonify({'message': msg, 'error': response, 'code': code})
                 else:
-                    #video_chunks[email] = []
-                    #completed_chunks[email] = []
                     return jsonify({'message': 'Video uploaded successfully', 'results': response, 'code': code})
 
-        #video_chunks[email] = []
-        #completed_chunks[email] = []
         return jsonify({'message': 'Chunk uploaded successfully'}), 200
 
     
     except Exception as e:
-        #video_chunks[email] = []
-        #completed_chunks[email] = []
-        return jsonify({'message': 'Chunk not uploaded', 'error': e}), 500
+        logger.exception(
+            'convertVideo failed for email=%s chunk_index=%s total_chunks=%s',
+            email,
+            chunk_index,
+            total_chunks,
+        )
+        if email:
+            clear_upload_state(email)
+        return jsonify({'message': 'Chunk not uploaded', 'error': str(e), 'code': 500}), 500
     
 
 @app.route("/api/getPrediction/<email>", methods=["GET"])
@@ -713,6 +755,5 @@ def getAllTesters():
 
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "5000"))
-    debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"
-    app.run(host="0.0.0.0", port=port, debug=debug)
+    debug_enabled = os.getenv("FLASK_DEBUG", "").lower() in {"1", "true", "yes"}
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5000")), debug=debug_enabled)

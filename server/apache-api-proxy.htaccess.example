@@ -1,0 +1,4 @@
+RewriteEngine On
+
+# Optional: if Apache proxying is enabled for this vhost, proxy /api to Flask.
+RewriteRule ^api/(.*)$ http://127.0.0.1:5000/api/$1 [P,L]
