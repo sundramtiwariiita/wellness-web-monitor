@@ -1,47 +1,59 @@
-.home-container {
-    margin-left: 0;
+.home-page__content {
     display: flex;
     flex-direction: column;
-    background: #11294F;
-    color: white;
-    min-height: 100vh;
-    font-family: 'Roboto', sans-serif;
-    width: 100%;
-    overflow: auto;
+    gap: 1.4rem;
 }
 
-.home-container  .heading{
+.home-card-grid,
+.home-support-grid {
+    margin-top: 0.1rem;
+}
+
+.home-card {
+    padding: 1.1rem;
     display: flex;
-    color: #F3BAA6;
-    font-weight: bolder;
     flex-direction: column;
+    gap: 1rem;
+}
+
+.home-card__image-wrap {
+    min-height: 210px;
+    border-radius: 24px;
+    overflow: hidden;
+    background: linear-gradient(145deg, rgba(122, 178, 167, 0.18), rgba(232, 156, 133, 0.18));
+    display: flex;
     align-items: center;
-    font-size: 3rem;
+    justify-content: center;
     padding: 1rem;
 }
 
-.home-container .cards{
+.home-card__image-wrap img {
+    width: 100%;
+    max-height: 210px;
+    object-fit: contain;
+}
+
+.home-card__body {
     display: flex;
-    flex-direction: row;
-    justify-content: center;
-    gap: 4rem;
-    margin-top: 5rem;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 0 0.25rem;
 }
 
-.home-container .cards .depression-detection, .chatbot-therapy, .results{
-    border: 1.5px solid #F3BAA6;
-    border-radius: 8px;
-    padding: 3rem;
-    width: 25rem;
+.home-card__body h3 {
+    margin: 0;
+    color: var(--wm-navy);
+    font-size: 1.3rem;
 }
 
-.home-container .cards .depression-detection img, .chatbot-therapy img, .results img{
-    width: 20rem;
-    height: 16rem;
+.home-card__body p {
+    margin: 0;
+    color: var(--wm-text-soft);
+    line-height: 1.7;
 }
 
-.home-container .cards .depression-detection h4, .chatbot-therapy h4, .results h4{
-    color: #F3BAA6;
+.home-card__action {
+    width: fit-content;
+    margin-top: auto;
 }
-
 

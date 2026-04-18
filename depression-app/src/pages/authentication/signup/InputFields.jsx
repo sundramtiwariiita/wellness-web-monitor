@@ -1,11 +1,4 @@
 import { useState } from "react"
-import { Input, VStack, HStack } from '@chakra-ui/react'
-import {
-    FormControl,
-    FormLabel,
-    Select,
-    Button
-} from "@chakra-ui/react";
 import { addUser } from "../../../services/Api";
 import { Link, useNavigate } from "react-router-dom";
 import { saveStoredUserData } from "../../../utils/userSession";
@@ -82,62 +75,65 @@ const InputFields = () => {
     };
 
     return (
-        <FormControl style={{display: "flex" , flexDirection : 'column' , alignItems : 'center'}}>
-            <HStack spacing={60} style={{display : "flex"}}>
-            <VStack spacing={10} width="50%" style={{display: "flex" , alignItems: "flex-start"}}>
+        <form className="registration-form" onSubmit={saveUser}>
+            <div className="registration-grid">
+                <label className="wm-form-control">
+                    <span>Name</span>
+                    <input className="wm-input" onChange={handleChange} name="name" id="name" placeholder="Name" type="text" />
+                </label>
 
-                <FormLabel htmlFor="name" >Name</FormLabel>
-                <Input background='aliceblue' color='black' height="2rem" width="16rem" variant='outline' onChange={(e) => handleChange(e)} name="name" isRequired id="name" placeholder='Name' type="text" borderRadius={5} outline='none'  _placeholder={{color: 'black'}}/>
+                <label className="wm-form-control">
+                    <span>Email ID</span>
+                    <input className="wm-input" onChange={handleChange} name="email" id="email" placeholder="Email ID" type="email" />
+                </label>
 
-                <FormLabel htmlFor="mobile-number" >Mobile Number (10 digits)</FormLabel>
-                <Input background='aliceblue' color='black' height="2rem" width="16rem" variant='outline' onChange={(e) => handleChange(e)} name="mobile" isRequired id="mobile-number" placeholder='Mobile Number' type="number" _placeholder={{color: 'black'}} />
+                <label className="wm-form-control">
+                    <span>Mobile Number (10 digits)</span>
+                    <input className="wm-input" onChange={handleChange} name="mobile" id="mobile-number" placeholder="Mobile Number" type="tel" inputMode="numeric" />
+                </label>
 
-                <FormLabel htmlFor='gender'>Gender</FormLabel>
-                <Select color='black' display='flex'  height="2rem" width="2rem" id='gender' name="gender" placeholder='Select Gender' onChange={(e) => handleChange(e)} bg='aliceblue' style = {{color :"black"}} _placeholder={{color: 'black'}}>
-                    <option style = {{color :"black"}}>Male</option>
-                    <option style = {{color :"black"}}>Female</option>
-                    <option style = {{color :"black"}}>Others</option>
-                </Select>
+                <label className="wm-form-control">
+                    <span>Gender</span>
+                    <select className="wm-select" id="gender" name="gender" defaultValue="" onChange={handleChange}>
+                        <option value="" disabled>Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Others">Others</option>
+                    </select>
+                </label>
 
-                <FormLabel htmlFor="password">Password</FormLabel>
-                <Input background='aliceblue' color='black' height="2rem" width="16rem" variant='outline' onChange={(e) => handleChange(e)} name="password" isRequired id="password" placeholder='Password' type="password" _placeholder={{color: 'black'}}/>
+                <label className="wm-form-control">
+                    <span>Date of Birth</span>
+                    <input className="wm-input" type="date" onChange={handleChange} name="dob" id="dob" />
+                </label>
 
-            </VStack>
-            <VStack spacing={10} width="50%" style={{display: "flex" , alignItems: "start" }}>
-                <FormLabel htmlFor="cpassword">Confirm Password</FormLabel>
-                <Input background='aliceblue' color='black' height="2rem" width="16rem" variant='outline' onChange={(e) => handleChange(e)} name="cpassword" isRequired id="cpassword" placeholder='Confirm Password' type="password" _placeholder={{color: 'black'}}/>
+                <label className="wm-form-control">
+                    <span>Age</span>
+                    <input className="wm-input" onChange={handleChange} name="age" id="age" placeholder="Age" type="text" inputMode="numeric" />
+                </label>
 
-                <FormLabel htmlFor="email">Email ID</FormLabel>
-                <Input background='aliceblue' color='black' height="2rem" width="16rem" variant='outline' onChange={(e) => handleChange(e)} name="email" isRequired id="email" placeholder='Email ID' _placeholder={{color: 'black'}}/>
+                <label className="wm-form-control">
+                    <span>Password</span>
+                    <input className="wm-input" onChange={handleChange} name="password" id="password" placeholder="Password" type="password" />
+                </label>
 
-                <FormLabel htmlFor="dob">Date of Birth</FormLabel>
-                <Input height="2rem" type="date" width="16rem" variant='outline' onChange={(e) => handleChange(e)} name="dob" isRequired id='dob' placeholder='Date of Birth' _placeholder={{color: 'black'}} style={{ backgroundColor: 'aliceblue', color: 'black' }}   />
-
-                <FormLabel htmlFor="age">Age</FormLabel>
-                <Input background='aliceblue' color='black' height="2rem" width="16rem" variant='outline' onChange={(e) => handleChange(e)} name="age" isRequired id="age" placeholder='Age' _placeholder={{color: 'black'}}/>
-
-            </VStack>
-            </HStack>
-
-            <Button
-                    bg="#F3BAA6"
-                    // bg="black"
-                    color="black"
-                    // _hover={{ bg: "#162D55" }}
-                    className="register-btn"
-                    style={{ margin: "3rem" }}
-                    height="2rem" width="16rem"
-                    onClick={(e) => (saveUser(e))} 
-            >Create Account
-            </Button>
-
-            <div className="login-text">
-                    Already have an account? <Link to="/login "><span style = {{color : '#F3BAA6'}}>Login</span></Link>
+                <label className="wm-form-control">
+                    <span>Confirm Password</span>
+                    <input className="wm-input" onChange={handleChange} name="cpassword" id="cpassword" placeholder="Confirm Password" type="password" />
+                </label>
             </div>
 
+            <button className="wm-btn wm-btn--primary registration-submit" type="submit">
+                Create Account
+            </button>
 
-
-        </FormControl>
+            <p className="registration-footnote">
+                Already have an account?{" "}
+                <Link to="/login">
+                    Login
+                </Link>
+            </p>
+        </form>
     )
 }
 

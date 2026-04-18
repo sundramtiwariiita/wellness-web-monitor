@@ -1,24 +1,27 @@
-.users-container {
-    min-height : 100vh;
-    overflow: auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 5px;
+.users-page__content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.3rem;
 }
 
-table {
-    margin-top: 10px;
-    font-family: arial, sans-serif;
-    border-collapse: collapse;
+.users-hero {
+  max-width: 980px;
 }
-  
-td, th {
-    border: 1px solid #dddddd;
-    text-align: left;
-    padding: 8px;
+
+.users-table-shell {
+  overflow-x: auto;
 }
-  
-.users-container h2{
-    color: #F3BAA6;
+
+.users-table-shell .wm-empty-state {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+@media (max-width: 760px) {
+  .users-table-shell {
+    border-radius: var(--wm-radius-lg);
+  }
+
+  .users-table-shell .wm-data-table {
+    min-width: 760px;
+  }
 }

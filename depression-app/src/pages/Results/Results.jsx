@@ -1,68 +1,43 @@
 import { useState, useEffect } from "react";
 import "./Results.css";
 import { getPrediction } from "../../services/Api";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { RotatingLines } from 'react-loader-spinner'
 import { getStoredUserEmail } from "../../utils/userSession";
+import WellnessPage from "../../components/wellness/WellnessPage";
 
 
 const Results = () => {
   const [res, setRes] = useState([]);
-  const [isFirstRun, setIsFirstRun] = useState(true);
-  // useEffect(() => {
-  //   const getResult = async () => {
-  //     try {
-
-  //       const email = JSON.parse(window.localStorage.getItem("userData"))[2];
-  //       const results = await getPrediction(email);
-  //       console.log(results);
-
-  //       if (results?.data?.message === "no testing done") {
-  //         setRes([]);
-  //       } else {
-  //         setRes(results?.data);
-  //         console.log(results.data[results.data.length - 1][1]);
-  //       }
-
-  //     } catch (error) {
-  //       console.log(error);
-  //       setRes([]);
-  //     }
-  //   };
-  //   getResult();
-  // }, []);
+  const [isLoading, setIsLoading] = useState(true);
 
 
   useEffect(() => {
-    if (isFirstRun || res.length === 0) {
-      const getResult = async () => {
-        try {
-          const email = getStoredUserEmail();
-          if (!email) {
-            setRes([]);
-            return;
-          }
-          const results = await getPrediction(email);
-          console.log(results);
-
-          if (results?.data?.message === "no testing done") {
-            setRes([]);
-          } else {
-            setRes(results?.data);
-            console.log(results.data[results.data.length - 1][1]);
-          }
-        } catch (error) {
-          console.log(error);
+    const getResult = async () => {
+      try {
+        const email = getStoredUserEmail();
+        if (!email) {
           setRes([]);
+          setIsLoading(false);
+          return;
         }
-      };
-      getResult();
-    }
-    setIsFirstRun(false);
-    return () => {
-      setIsFirstRun(false);
+        const results = await getPrediction(email);
+
+        if (results?.data?.message === "no testing done") {
+          setRes([]);
+        } else {
+          setRes(results?.data || []);
+        }
+      } catch (error) {
+        console.log(error);
+        setRes([]);
+      } finally {
+        setIsLoading(false);
+      }
     };
-  }, [res, isFirstRun]);
+
+    getResult();
+  }, []);
   
 
   const findClass = (value) => {
@@ -77,73 +52,98 @@ const Results = () => {
     }
   };
 
+  const orderedResults = [...res].reverse();
+  const latestResult = orderedResults[0];
+  const latestScore = Number(latestResult?.[1] || 0);
+  const latestLabel = latestResult ? findClass(latestScore) : "";
+
   return (
-    <>
-      <div className="results-container">
-        <h2>Results</h2>
+    <WellnessPage
+      className="results-page"
+      contentClassName="results-page__content"
+      subtitle="Review your latest screening result and your earlier history in one calm summary view."
+    >
+      <section className="wm-grid-two results-summary-grid reveal-up">
+        <div className="wm-panel wm-panel--hero">
+          <p className="wm-eyebrow">Latest result</p>
+          <h1 className="wm-heading">
+            {latestResult ? latestLabel : "Your result history will appear here once a test is completed."}
+          </h1>
+          <p className="wm-subcopy">
+            {latestResult
+              ? `Your latest recorded score is ${latestResult[1]}. Use this as a gentle signal to reflect, not as a final judgment about yourself.`
+              : "Once a completed screening is saved, Wellness Monitor will show the latest score and category here."}
+          </p>
+        </div>
 
-        {res?.length === 0 ? (
-          <RotatingLines
-            visible={true}
-            height="96"
-            width="96"
-            color="white"
-            strokeColor="white"
-            strokeWidth="5"
-            animationDuration="0.75"
-            ariaLabel="rotating-lines-loading"
-            wrapperStyle={{}}
-            wrapperClass=""
-          />
+        <div className="wm-card results-guidance">
+          <p className="wm-eyebrow">Next step</p>
+          <h3>{latestResult && latestScore >= 0.5 ? "A supportive follow-up may help right now." : "Keep checking in with yourself gently."}</h3>
+          <p>
+            {latestResult && latestScore >= 0.5
+              ? "If you feel low or overwhelmed, the chatbot can help you slow down, process the feeling, and think about your next step."
+              : "If you are feeling steady, you can return home, review your profile history, or come back later when you want another check-in."}
+          </p>
+          <Link
+            to={latestResult && latestScore >= 0.5 ? "/chat-bot" : "/home"}
+            className="wm-link-button wm-link-button--primary"
+          >
+            {latestResult && latestScore >= 0.5 ? "Chat with us" : "Return home"}
+          </Link>
+        </div>
+      </section>
+
+      <section className="wm-panel wm-panel--soft reveal-up delay-1">
+        <div className="results-history-header">
+          <div>
+            <p className="wm-eyebrow">Screening history</p>
+            <h2 className="wm-heading">Your saved results</h2>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="wm-empty-state">
+            <RotatingLines
+              visible={true}
+              height="92"
+              width="92"
+              color="#234154"
+              strokeColor="#234154"
+              strokeWidth="5"
+              animationDuration="0.75"
+              ariaLabel="results-loading"
+            />
+            <p>Loading your saved screening history...</p>
+          </div>
+        ) : orderedResults.length === 0 ? (
+          <div className="wm-empty-state">
+            <h3 className="wm-heading">Nothing to show yet</h3>
+            <p>Complete a screening and your results will appear here automatically.</p>
+          </div>
         ) : (
-          <>
-            <table>
-              <tr>
-                <th>Testing Date</th>
-                <th>Score</th>
-                <th>Result</th>
-              </tr>
-              {res?.length === 0 ? (
-                <p>Nothing to show</p>
-              ) : (
-                res.reverse().map((element) => (
-                  <>
-                    <tr>
-                      <td>{element[0]}</td>
-                      <td>{element[1]}</td>
-                      <td>{element[1] ? findClass(element[1]) : ""}</td>
-                    </tr>
-                  </>
-                ))
-              )}
+          <div className="wm-table-shell">
+            <table className="wm-data-table">
+              <thead>
+                <tr>
+                  <th>Testing Date</th>
+                  <th>Score</th>
+                  <th>Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orderedResults.map((element, index) => (
+                  <tr key={`${element[0]}-${index}`}>
+                    <td>{element[0]}</td>
+                    <td>{element[1]}</td>
+                    <td>{element[1] ? findClass(element[1]) : ""}</td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
-
-            {res[0][1] >= 0.5 ? (
-              <div className="depressed-prediciton">
-                <p>
-                  It's completely okay to not feel your best, we're here for you
-                  every step of the way. Don't hesitate to reach out and engage
-                  with our chatbot for further support and guidance.
-                </p>
-                <Link to="/chat-bot">
-                  <button className="btn">Chat with us</button>
-                </Link>
-              </div>
-            ) : (
-              <div className="not-depressed-prediciton">
-                <p>
-                  Your test results indicate that you're perfectly healthy. We
-                  appreciate your participation in the test!!
-                </p>
-                <Link to="/home">
-                  <button className="btn">Home</button>
-                </Link>
-              </div>
-            )}
-          </>
+          </div>
         )}
-      </div>
-    </>
+      </section>
+    </WellnessPage>
   );
 };
 

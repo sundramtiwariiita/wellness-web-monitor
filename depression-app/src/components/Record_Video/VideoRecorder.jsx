@@ -206,39 +206,41 @@ const VideoRecorder = () => {
 
 	return (
 		<>
-			<div className="video-player">
-				{!recordedVideo ? (
-					<video ref={liveVideoFeed} autoPlay className="live-player" style={{"width": "90%", "height": "100%"}}></video>
-				) : null}
-				{recordedVideo ? (
-					<>
-						<div className="recorded-player">
-							<video className="recorded" src={recordedVideo} controls></video>
-							<button onClick={downloadVideo}>
-								Get Predictions
-							</button>
-						</div>
-						{getPredictions && (
+			<div className="video-recorder-shell">
+				<div className="video-stage">
+					<div className="video-stage__meta">
+						<span className="wm-status-chip">{recordedVideo ? "Preview ready" : permission ? "Camera ready" : "Camera off"}</span>
+						<p className="wm-inline-note">
+							{recordedVideo
+								? "Review your recording before asking for the prediction."
+								: "Turn on the camera, record your answer, and keep the frame steady."}
+						</p>
+					</div>
+
+					<div className="video-stage__viewport">
+						{!recordedVideo ? (
 							<>
-								<div className="like-modal-overlay">
-									<div className="like-modal-content upload-progress-modal" style={{ height: "60vh" }}>
-										<Loader type="bubble-top" title={"Uploading and processing your video"} size={100}/>
-										<p className="upload-status-text">{uploadStatus}</p>
-										<div className="upload-progress-track" aria-hidden="true">
-											<div
-												className="upload-progress-fill"
-												style={{ width: `${uploadProgress}%` }}
-											></div>
-										</div>
-										<p className="upload-progress-label">{uploadProgress}% uploaded</p>
-										<p className="upload-progress-note">Please keep this page open until the upload finishes.</p>
+								<video ref={liveVideoFeed} autoPlay className="live-player"></video>
+								{!permission ? (
+									<div className="video-stage__placeholder">
+										<strong>Camera preview will appear here</strong>
+										<span>Use a well-lit space and keep your device as steady as possible.</span>
 									</div>
-								</div>
+								) : null}
 							</>
+						) : (
+							<div className="recorded-player">
+								<video className="recorded" src={recordedVideo} controls></video>
+							</div>
 						)}
-						
-					</>
-				) : null}
+					</div>
+
+					{recordedVideo ? (
+						<button type="button" className="wm-btn wm-btn--primary recorder-action" onClick={downloadVideo} disabled={getPredictions}>
+							Get Predictions
+						</button>
+					) : null}
+				</div>
 			</div>
 			
 			{
@@ -246,17 +248,17 @@ const VideoRecorder = () => {
 					<main>
 						<div className="video-controls">
 							{!permission ? (
-								<button onClick={getCameraPermission} type="button">
+								<button className="wm-btn wm-btn--secondary" onClick={getCameraPermission} type="button">
 									Turn On Camera
 								</button>
 							) : null}
 							{permission && recordingStatus === "inactive" ? (
-								<button onClick={startRecording} type="button">
+								<button className="wm-btn wm-btn--primary" onClick={startRecording} type="button">
 									Start Recording
 								</button>
 							) : null}
 							{recordingStatus === "recording" ? (
-								<button onClick={stopRecording} type="button">
+								<button className="wm-btn wm-btn--secondary" onClick={stopRecording} type="button">
 									Stop Recording
 								</button>
 							) : null}
@@ -264,6 +266,23 @@ const VideoRecorder = () => {
 					</main>
 				: null 
 			}
+
+			{getPredictions && (
+				<div className="like-modal-overlay">
+					<div className="like-modal-content upload-progress-modal" style={{ height: "60vh" }}>
+						<Loader type="bubble-top" title={"Uploading and processing your video"} size={100}/>
+						<p className="upload-status-text">{uploadStatus}</p>
+						<div className="upload-progress-track" aria-hidden="true">
+							<div
+								className="upload-progress-fill"
+								style={{ width: `${uploadProgress}%` }}
+							></div>
+						</div>
+						<p className="upload-progress-label">{uploadProgress}% uploaded</p>
+						<p className="upload-progress-note">Please keep this page open until the upload finishes.</p>
+					</div>
+				</div>
+			)}
 		</>
 	);
 };

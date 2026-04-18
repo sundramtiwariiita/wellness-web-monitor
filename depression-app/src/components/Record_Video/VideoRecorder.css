@@ -1,14 +1,81 @@
-.video-controls button {
-    background: #d8ebe3;
-    color : #1f3c34;
-    border: 1px solid #b6d1c6;
+.video-recorder-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
-.recorded-player button {
-    margin-top: 2rem;
-    background: #d8ebe3;
-    color : #1f3c34;
-    border: 1px solid #b6d1c6;
+.video-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.video-stage__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.9rem;
+}
+
+.video-stage__viewport {
+    position: relative;
+    min-height: 360px;
+    overflow: hidden;
+    border-radius: 28px;
+    background:
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.84), transparent 30%),
+        linear-gradient(160deg, rgba(122, 178, 167, 0.18) 0%, rgba(35, 65, 84, 0.14) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+}
+
+.live-player,
+.recorded {
+    width: 100%;
+    height: 100%;
+    min-height: 360px;
+    object-fit: cover;
+    background: rgba(20, 36, 44, 0.18);
+}
+
+.video-stage__placeholder {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    gap: 0.55rem;
+    text-align: center;
+    padding: 2rem;
+    color: var(--wm-navy);
+    background: linear-gradient(180deg, rgba(247, 240, 231, 0.62) 0%, rgba(236, 244, 240, 0.74) 100%);
+}
+
+.video-stage__placeholder strong {
+    font-size: 1.15rem;
+}
+
+.video-stage__placeholder span {
+    max-width: 420px;
+    color: var(--wm-text-soft);
+    line-height: 1.7;
+}
+
+.video-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+}
+
+.recorded-player {
+    width: 100%;
+}
+
+.recorder-action {
+    width: fit-content;
+}
+
+.video-controls button {
+    min-width: 180px;
 }
 
 .like-modal-overlay {
@@ -17,18 +84,18 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(24, 35, 43, 0.48);
+    background: rgba(24, 35, 43, 0.34);
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: 1rem;
   }
   
   .like-modal-content {
     position: relative;
     background: linear-gradient(180deg, #f6fbf8 0%, #e7f0ed 100%);
-    width: 80%;
+    width: min(760px, 100%);
     max-width: 800px;
-    max-height: 20%;
     padding: 20px;
     border-radius: 18px;
     box-shadow: 0 18px 48px rgba(20, 34, 31, 0.16);
@@ -36,16 +103,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.chat-btn  {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #d8ebe3;
-    color: #1f3c34;
-    border: 1px solid #b6d1c6;
 }
 
 .upload-progress-modal {
@@ -84,5 +141,16 @@
     max-width: 420px;
     font-size: 0.95rem;
     opacity: 0.84;
+}
+
+@media (max-width: 760px) {
+    .video-stage__meta {
+        align-items: flex-start;
+    }
+
+    .video-controls button,
+    .recorder-action {
+        width: 100%;
+    }
 }
 

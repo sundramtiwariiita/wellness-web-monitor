@@ -1,0 +1,14 @@
+.construction-page__content {
+  display: grid;
+  place-items: center;
+  min-height: 62vh;
+}
+
+.construction-card {
+  width: min(820px, 100%);
+  text-align: center;
+}
+
+.construction-card .wm-eyebrow {
+  margin-inline: auto;
+}

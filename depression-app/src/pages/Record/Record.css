@@ -1,73 +1,30 @@
-.record-container {
-  min-height : 100vh;
-  overflow: auto;
-}
-
-.record-container h1 {
-  font-weight: 700;
-  margin: 2rem;
-}
-
-.record-container .button-flex {
+.record-page__content {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 1.4rem;
 }
 
-.record-container .button-flex .record-audio-btn, .record-video-btn {
-  background: #F3BAA6;
-  color : #11294F;
+.record-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  gap: 1.4rem;
 }
 
-.video-controls {
-  margin-bottom: 20px;
-}
-
-.video-player {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.video-player,
-.recorded-player {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.live-player {
-    height: 200px;
-    width: 400px;
-    border: 1px solid #646cff;
-    margin-bottom: 30px;
-}
-
-/* .recorded-player video {
-    height: 400px;
-    width: 800px;
-} */
-
-.record-container .video-recorder-container{
+.record-video-panel,
+.record-question-panel {
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 1.1rem;
 }
 
-.record-container .video-recorder-container .video{
-  width: 60%;
+.record-panel-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.record-container .video-recorder-container .questions{
-  width: 40%;
-  text-align: left;
-  align-items: center;
-}
-
-.record-container .video-recorder-container .questions h1 {
-  font-size: 1.5rem;
-  font-weight: 500;
-  width: 20vw;
-  text-align: left;
+@media (max-width: 1080px) {
+  .record-grid {
+    grid-template-columns: 1fr;
+  }
 }
