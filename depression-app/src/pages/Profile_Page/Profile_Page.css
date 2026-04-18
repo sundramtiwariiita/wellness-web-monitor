@@ -1,25 +1,45 @@
-.profile-page-container {
-    min-height : 100vh;
-    overflow: auto;
+.profile-page__content {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    margin: 5px;
-    /* justify-content: center; */
+    gap: 1.4rem;
 }
 
-table {
-    margin-top: 10px;
-    font-family: arial, sans-serif;
-    border-collapse: collapse;
+.profile-details-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    justify-content: center;
 }
-  
-td, th {
-    border: 1px solid #dddddd;
-    text-align: left;
-    padding: 8px;
+
+.profile-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
 }
-  
-.profile-page-container h2{
-    color: #F3BAA6;
+
+.profile-detail-grid div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.9rem 1rem;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.52);
+}
+
+.profile-detail-grid strong {
+    color: var(--wm-navy);
+}
+
+.profile-detail-grid span {
+    color: var(--wm-text-soft);
+}
+
+.profile-history-header {
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 760px) {
+    .profile-detail-grid {
+        grid-template-columns: 1fr;
+    }
 }

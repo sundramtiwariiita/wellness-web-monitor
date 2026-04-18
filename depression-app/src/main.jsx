@@ -11,7 +11,9 @@ import Chatbot from './pages/Chatbot/Chatbot.jsx'
 import Welcome from './pages/Welcome/Welcome.jsx'
 import Results from './pages/Results/Results.jsx'
 import Construction from './pages/Construction/Construction.jsx'
+import NotFound from './pages/NotFound/NotFound.jsx'
 import './index.css'
+import './styles/wellness-theme.css'
 import {
   createBrowserRouter,
   RouterProvider,
@@ -20,19 +22,21 @@ import { ChakraProvider } from '@chakra-ui/react'
 import Admin from './pages/Admin/Admin.jsx'
 import Users from './pages/Users/Users.jsx'
 import Testing from './pages/Testing/Testing.jsx'
+import { AmbientAudioProvider } from './components/wellness/AmbientAudioProvider.jsx'
+import ProtectedRoute from './components/auth/ProtectedRoute.jsx'
 
-const router = createBrowserRouter([
+const routes = [
   {
     path: "/",
     element: <Welcome />,
   },
   {
     path: "/record",
-    element: <App />,
+    element: <ProtectedRoute><App /></ProtectedRoute>,
   },
   {
     path: "/predictor",
-    element: <Depression_Predictor />
+    element: <ProtectedRoute><Depression_Predictor /></ProtectedRoute>
   },
   {
     path: "/register",
@@ -44,23 +48,23 @@ const router = createBrowserRouter([
   },
   {
     path: "/instructions",
-    element: <Instructions />
+    element: <ProtectedRoute><Instructions /></ProtectedRoute>
   },
   {
     path: "/profile",
-    element: <Profile_Page />
+    element: <ProtectedRoute><Profile_Page /></ProtectedRoute>
   },
   {
     path: "/chat-bot",
-    element: <Chatbot />
+    element: <ProtectedRoute><Chatbot /></ProtectedRoute>
   },
   {
     path: "/home",
-    element: <Home />
+    element: <ProtectedRoute><Home /></ProtectedRoute>
   },
   {
     path: "/results",
-    element: <Results />
+    element: <ProtectedRoute><Results /></ProtectedRoute>
   },
   {
     path: "/under-construction",
@@ -68,20 +72,33 @@ const router = createBrowserRouter([
   },
   {
     path: "/admin-page",
-    element: <Admin />
+    element: <ProtectedRoute role="admin"><Admin /></ProtectedRoute>
   },
   {
     path: "/users-page",
-    element: <Users />
+    element: <ProtectedRoute role="admin"><Users /></ProtectedRoute>
   },
   {
     path: "/testing-page",
-    element: <Testing />
+    element: <ProtectedRoute role="admin"><Testing /></ProtectedRoute>
+  },
+  {
+    path: "*",
+    element: <NotFound />
   }
-]);
+];
+
+const router = createBrowserRouter(
+  routes.map((route) => ({
+    errorElement: <NotFound />,
+    ...route,
+  }))
+);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <ChakraProvider>
-    <RouterProvider router={router} />
+    <AmbientAudioProvider>
+      <RouterProvider router={router} />
+    </AmbientAudioProvider>
   </ChakraProvider>,
 )

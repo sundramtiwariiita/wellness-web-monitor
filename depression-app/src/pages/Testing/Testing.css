@@ -1,64 +1,106 @@
-.testing-container {
-    min-height : 100vh;
-    overflow: auto;
-    display: flex;
+.testing-page__content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.3rem;
+}
+
+.testing-hero {
+  max-width: 980px;
+}
+
+.testing-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.testing-date-control {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.testing-date-control label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--wm-navy);
+  font-weight: 900;
+}
+
+.testing-date-input {
+  width: 11rem;
+  border-radius: 999px;
+  border: 1px solid rgba(79, 111, 117, 0.18);
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--wm-text);
+  padding: 0.88rem 1rem;
+  box-shadow: inset 0 1px 2px rgba(25, 48, 58, 0.04);
+}
+
+.testing-date-input:focus {
+  border-color: rgba(122, 178, 167, 0.44);
+  box-shadow:
+    0 0 0 4px rgba(122, 178, 167, 0.12),
+    inset 0 1px 2px rgba(25, 48, 58, 0.04);
+}
+
+.testing-small-btn {
+  padding-inline: 1rem;
+}
+
+.testing-table-shell {
+  overflow-x: auto;
+}
+
+.react-datepicker {
+  border: 1px solid rgba(79, 111, 117, 0.18);
+  border-radius: 18px;
+  box-shadow: var(--wm-shadow-soft);
+  font-family: inherit;
+  overflow: hidden;
+}
+
+.react-datepicker__header {
+  background: #eef7f4;
+  border-bottom: 1px solid rgba(79, 111, 117, 0.14);
+}
+
+.react-datepicker__current-month,
+.react-datepicker-time__header,
+.react-datepicker-year-header {
+  color: var(--wm-navy);
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background: var(--wm-teal-deep);
+  color: #fff;
+}
+
+@media (max-width: 860px) {
+  .testing-toolbar {
+    align-items: stretch;
     flex-direction: column;
-    align-items: center;
-    margin: 5px;
-}
+  }
 
-table {
-    margin-top: 10px;
-    font-family: arial, sans-serif;
-    border-collapse: collapse;
-}
-  
-td, th {
-    border: 1px solid #dddddd;
-    text-align: left;
-    padding: 8px;
-}
-  
-.testing-container h2{
-    color: #F3BAA6;
-}
+  .testing-toolbar .wm-btn {
+    width: 100%;
+  }
 
-.testing-container .date-export-container{
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    margin: 2rem;
-    gap: 2rem;
-}
+  .testing-date-control {
+    align-items: stretch;
+    flex-direction: column;
+  }
 
-.testing-container .date-export-container .date-container{
-    display: flex;
-    flex-direction: row;
-    gap: 0.4rem;
-    align-items: center;
-}
+  .testing-date-input,
+  .testing-date-control .react-datepicker-wrapper {
+    width: 100%;
+  }
 
-.testing-container .date-export-container .date-container h3{
-    font-weight: 300;
-}
-
-.testing-container .date-export-container .date-container .date-filter{
-    padding: 0.5rem;
-    border: 1px solid #dddddd;
-    background: #11294F;
-    border-radius: 0.5rem;
-    color: white;
-}
-
-.testing-container .date-export-container .date-container .reset-btn {
-    color: #11294F;
-    background: #F3BAA6;
-    border: 1px solid #dddddd;
-    font-size: 0.9rem;
-}
-.testing-container .date-export-container .export-container button{
-    color: #11294F;
-    background: #F3BAA6;
-    border: 1px solid #dddddd;
-    font-size: 0.9rem;
+  .testing-table-shell .wm-data-table {
+    min-width: 720px;
+  }
 }

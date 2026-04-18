@@ -1,14 +1,29 @@
-.predictor-container {
-    min-height : 100vh;
-    overflow: auto;
+.predictor-page__content {
+  display: grid;
+  place-items: center;
+  min-height: 62vh;
 }
 
-.predictor-container button {
-    background: #F3BAA6;
-    color : #11294F;
-    width: 12rem;
-    border-radius: 8px;
-    font-size: 1rem;
-    padding: 0.5rem 0.8rem 0.5rem 0.8rem;
-    cursor : pointer;
+.predictor-card {
+  width: min(760px, 100%);
+}
+
+.predictor-result-box {
+  margin-top: 1.4rem;
+  padding: 1.25rem;
+  border-radius: var(--wm-radius-lg);
+  background: rgba(122, 178, 167, 0.14);
+  border: 1px solid rgba(122, 178, 167, 0.24);
+}
+
+.predictor-result-box p {
+  margin: 0;
+  color: var(--wm-navy);
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1.7;
+}
+
+.predictor-note {
+  margin-top: 1rem;
 }

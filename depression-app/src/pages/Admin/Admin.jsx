@@ -1,39 +1,62 @@
+import { Link } from "react-router-dom";
+import { FiActivity, FiUsers } from "react-icons/fi";
+import WellnessPage from "../../components/wellness/WellnessPage";
 import "./Admin.css";
-import { Link } from 'react-router-dom'
-import Test from "../../images/Test.png"
-import User from "../../images/User.webp"
 
+const adminCards = [
+  {
+    title: "Users",
+    description: "Review registered user profiles and contact details.",
+    to: "/users-page",
+    action: "See all existing users",
+    icon: FiUsers,
+  },
+  {
+    title: "Testing",
+    description: "Inspect completed tests, filter by date, and export reports.",
+    to: "/testing-page",
+    action: "See all results",
+    icon: FiActivity,
+  },
+];
 
 const Admin = () => {
-
   return (
-    <>
-      <div className="admin-container">
-        <div className="heading">
-          Admin Page 
-        </div>
+    <WellnessPage
+      className="admin-page"
+      contentClassName="admin-page__content"
+      subtitle="A clean administrative view for managing Wellness Monitor records."
+    >
+      <section className="admin-hero wm-panel wm-panel--hero reveal-up">
+        <p className="wm-eyebrow">Admin Workspace</p>
+        <h1 className="wm-display">Manage wellness data with clarity.</h1>
+        <p className="wm-subcopy">
+          Access user records and testing results from a calmer, more readable dashboard while keeping the existing admin routes unchanged.
+        </p>
+      </section>
 
-        <div className='cards'> 
-          <div className='users-card'> 
-            <img src = {User} />
-            <h3>Users</h3>
-            <Link to="/users-page">
-                <h4>See all existing users</h4>
+      <section className="admin-card-grid" aria-label="Admin actions">
+        {adminCards.map((card, index) => {
+          const Icon = card.icon;
+
+          return (
+            <Link
+              className={`admin-action-card wm-card reveal-up delay-${index + 1}`}
+              key={card.title}
+              to={card.to}
+            >
+              <span className="admin-action-card__icon" aria-hidden="true">
+                <Icon />
+              </span>
+              <h3>{card.title}</h3>
+              <p>{card.description}</p>
+              <span className="admin-action-card__link">{card.action}</span>
             </Link>
-          </div>
+          );
+        })}
+      </section>
+    </WellnessPage>
+  );
+};
 
-          <div className='testing-card'>
-            <img src = {Test} />
-            <h3>Testing</h3>
-            <Link to="/testing-page">
-                <h4>See all results</h4>
-            </Link>
-          </div>
-        </div>      
-
-      </div>
-    </>
-  )
-}
-
-export default Admin
+export default Admin;

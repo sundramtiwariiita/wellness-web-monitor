@@ -1,4 +1,5 @@
 const STORAGE_KEYS = ["userData", "userInfo"];
+const AUTH_SESSION_KEY = "wm_auth_session";
 
 const parseStoredValue = (key) => {
     try {
@@ -54,6 +55,59 @@ export const getStoredUserData = () => {
 
 export const getStoredUserEmail = () => getStoredUserData()?.email || null;
 
+export const saveUserAuthSession = (value) => {
+    if (typeof window === "undefined") {
+        return null;
+    }
+
+    const normalized = normalizeUserData(value);
+    if (!normalized?.email) {
+        return null;
+    }
+
+    const session = {
+        role: "user",
+        email: normalized.email,
+        loggedInAt: new Date().toISOString(),
+    };
+
+    window.localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+    return session;
+};
+
+export const saveAdminAuthSession = () => {
+    if (typeof window === "undefined") {
+        return null;
+    }
+
+    const session = {
+        role: "admin",
+        email: "admin_anupam2024@gmail.com",
+        loggedInAt: new Date().toISOString(),
+    };
+
+    window.localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+    return session;
+};
+
+export const getAuthSession = () => {
+    if (typeof window === "undefined") {
+        return null;
+    }
+
+    try {
+        const rawValue = window.localStorage.getItem(AUTH_SESSION_KEY);
+        return rawValue ? JSON.parse(rawValue) : null;
+    } catch (error) {
+        console.error("Unable to parse auth session:", error);
+        return null;
+    }
+};
+
+export const isUserAuthenticated = () => getAuthSession()?.role === "user" && Boolean(getStoredUserEmail());
+
+export const isAdminAuthenticated = () => getAuthSession()?.role === "admin";
+
 export const saveStoredUserData = (value) => {
     if (typeof window === "undefined") {
         return null;
@@ -77,4 +131,5 @@ export const clearStoredUserData = () => {
     }
 
     STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
+    window.localStorage.removeItem(AUTH_SESSION_KEY);
 };

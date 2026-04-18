@@ -20,6 +20,28 @@ import io
 import tempfile
 import subprocess
 
+
+def load_local_env_file():
+    """Load simple KEY=VALUE pairs from .env without requiring python-dotenv."""
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if not os.path.exists(env_path):
+        return
+
+    with open(env_path, "r", encoding="utf-8") as env_file:
+        for raw_line in env_file:
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+load_local_env_file()
+
 app = Flask(__name__)
 app.config['MYSQL_HOST'] = os.getenv('MYSQL_HOST', 'localhost')
 app.config['MYSQL_USER'] = os.getenv('MYSQL_USER', 'root')
@@ -29,13 +51,20 @@ app.config['MYSQL_PORT'] = int(os.getenv('MYSQL_PORT', '3306'))
 CORS(app)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL_CANDIDATES = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemma-3-4b-it"]
+GEMINI_MODEL_CANDIDATES = [
+    model.strip()
+    for model in os.getenv(
+        "GEMINI_MODEL_CANDIDATES",
+        "gemini-2.5-flash,gemini-flash-latest,gemini-2.5-flash-lite",
+    ).split(",")
+    if model.strip()
+]
 THERAPIST_SYSTEM_INSTRUCTION = (
     "You are a calm, supportive therapist-style wellness assistant for a student wellness web app. "
     "Be warm, brief, non-judgmental, and emotionally aware. "
     "Do not claim to be a licensed therapist, do not diagnose, and do not give medical or legal advice. "
     "Use reflective listening, simple grounding, and practical next-step suggestions. "
-    "Prefer 3 to 6 natural sentences that feel complete, thoughtful, and human. "
+    "Prefer 4 to 6 natural sentences that feel complete, thoughtful, and human. "
     "Do not end with unfinished phrases or cut-off sentences. "
     "Ask at most one gentle follow-up question when helpful. "
     "If the user appears to be in crisis or at risk of self-harm, encourage immediate human help and emergency support."
@@ -475,6 +504,23 @@ def is_crisis_message(message):
     return any(term in normalized for term in crisis_terms)
 
 
+def detect_chat_emotion(message):
+    normalized = (message or "").lower()
+    keyword_map = {
+        "sadness": ["sad", "low", "depressed", "empty", "hopeless", "cry", "lonely", "worthless"],
+        "fear": ["anxious", "anxiety", "panic", "scared", "afraid", "fear", "worried", "stress", "stressed"],
+        "anger": ["angry", "mad", "furious", "irritated", "frustrated", "hate"],
+        "joy": ["happy", "good", "better", "grateful", "excited", "calm", "peaceful"],
+        "guilt": ["guilt", "guilty", "regret", "ashamed", "shame"],
+    }
+
+    for emotion, keywords in keyword_map.items():
+        if any(keyword in normalized for keyword in keywords):
+            return emotion
+
+    return "neutral"
+
+
 def build_gemini_contents(history, message, emotion):
     contents = []
     trimmed_history = history[-8:] if isinstance(history, list) else []
@@ -540,8 +586,19 @@ def build_generation_config(model_name, max_output_tokens, temperature, top_p):
     return config
 
 
+def build_gemini_payload(model_name, contents, max_output_tokens=520, temperature=0.78, top_p=0.92):
+    return {
+        "system_instruction": {
+            "parts": [{"text": THERAPIST_SYSTEM_INSTRUCTION}]
+        },
+        "contents": contents,
+        "generationConfig": build_generation_config(model_name, max_output_tokens, temperature, top_p),
+    }
+
+
 def generate_gemini_response(history, message, emotion):
     if not GEMINI_API_KEY:
+        logger.debug("Gemini API key is not configured; local chatbot fallback used.")
         return None, None
 
     headers = {
@@ -552,20 +609,23 @@ def generate_gemini_response(history, message, emotion):
     best_model = None
 
     for model_name in GEMINI_MODEL_CANDIDATES:
-        payload = {
-            "system_instruction": {
-                "parts": [{"text": THERAPIST_SYSTEM_INSTRUCTION}]
-            },
-            "contents": build_gemini_contents(history, message, emotion),
-            "generationConfig": build_generation_config(model_name, 420, 0.82, 0.9),
-        }
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
-        response = requests.post(
-            url,
-            headers=headers,
-            json=payload,
-            timeout=30,
+        payload = build_gemini_payload(
+            model_name,
+            build_gemini_contents(history, message, emotion),
+            max_output_tokens=520,
         )
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+        try:
+            response = requests.post(
+                url,
+                headers=headers,
+                json=payload,
+                timeout=20,
+            )
+        except requests.RequestException as request_error:
+            logger.debug(f"Gemini model {model_name} request failed: {str(request_error)}")
+            continue
+
         if response.status_code >= 400:
             logger.debug(f"Gemini model {model_name} failed: {response.status_code} {response.text}")
             continue
@@ -577,11 +637,9 @@ def generate_gemini_response(history, message, emotion):
 
         # If Gemini stops because of output limits, ask once more to finish the answer cleanly.
         if finish_reason == "MAX_TOKENS":
-            continuation_payload = {
-                "system_instruction": {
-                    "parts": [{"text": THERAPIST_SYSTEM_INSTRUCTION}]
-                },
-                "contents": [
+            continuation_payload = build_gemini_payload(
+                model_name,
+                [
                     {
                         "role": "user",
                         "parts": [
@@ -598,26 +656,28 @@ def generate_gemini_response(history, message, emotion):
                         ],
                     }
                 ],
-                "generationConfig": build_generation_config(model_name, 220, 0.7, 0.9),
-            }
-            continuation_response = requests.post(
-                url,
-                headers=headers,
-                json=continuation_payload,
-                timeout=30,
+                max_output_tokens=260,
+                temperature=0.7,
             )
-            if continuation_response.status_code < 400:
+            try:
+                continuation_response = requests.post(
+                    url,
+                    headers=headers,
+                    json=continuation_payload,
+                    timeout=20,
+                )
+            except requests.RequestException:
+                continuation_response = None
+            if continuation_response is not None and continuation_response.status_code < 400:
                 continuation_data = continuation_response.json()
                 continuation_text, _ = extract_gemini_candidate(continuation_data)
                 if continuation_text:
                     final_text = f"{final_text} {continuation_text}".strip()
 
         if needs_expansion(final_text):
-            expansion_payload = {
-                "system_instruction": {
-                    "parts": [{"text": THERAPIST_SYSTEM_INSTRUCTION}]
-                },
-                "contents": [
+            expansion_payload = build_gemini_payload(
+                model_name,
+                [
                     {
                         "role": "user",
                         "parts": [
@@ -633,15 +693,20 @@ def generate_gemini_response(history, message, emotion):
                         ],
                     }
                 ],
-                "generationConfig": build_generation_config(model_name, 320, 0.78, 0.92),
-            }
-            expansion_response = requests.post(
-                url,
-                headers=headers,
-                json=expansion_payload,
-                timeout=30,
+                max_output_tokens=380,
+                temperature=0.78,
+                top_p=0.92,
             )
-            if expansion_response.status_code < 400:
+            try:
+                expansion_response = requests.post(
+                    url,
+                    headers=headers,
+                    json=expansion_payload,
+                    timeout=20,
+                )
+            except requests.RequestException:
+                expansion_response = None
+            if expansion_response is not None and expansion_response.status_code < 400:
                 expansion_data = expansion_response.json()
                 expanded_text, _ = extract_gemini_candidate(expansion_data)
                 if expanded_text:
@@ -674,20 +739,12 @@ def getResponse():
         if is_crisis_message(message):
             return jsonify({"response": build_crisis_response(), "source": "safety"}), 200
 
-        from emotion_detection import (
-            get_emotion
-        )
-
-        from emotion_detection_bert import (
-            get_emotion_bert
-        )
-
         if message == "i am not happy": 
             detected_emotion = "sadness"
         elif message == "i am not sad":
             detected_emotion = "joy"
         else:
-            detected_emotion = get_emotion_bert(message)
+            detected_emotion = detect_chat_emotion(message)
         print(detected_emotion)
 
         try:
@@ -704,6 +761,15 @@ def getResponse():
         logger.debug(f"An error occurred: {str(e)}")
         fallback_response = build_local_chatbot_response(request.args.get("message"), "neutral")
         return jsonify({"response": fallback_response, "source": "local-fallback"}), 200
+
+
+@app.route("/api/chatbot-status", methods=["GET"])
+def chatbot_status():
+    return jsonify({
+        "geminiConfigured": bool(GEMINI_API_KEY),
+        "models": GEMINI_MODEL_CANDIDATES,
+        "mode": "gemini" if GEMINI_API_KEY else "local-fallback",
+    }), 200
 
 
 @app.route("/api/getAllUsers/", methods=["GET"])

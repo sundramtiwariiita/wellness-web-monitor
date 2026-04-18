@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import "./Profile_Page.css";
-import { getUserData } from "../../services/Api";
-import { json } from "react-router-dom";
 import { getPrediction } from "../../services/Api";
-import { getStoredUserEmail } from "../../utils/userSession";
+import { getStoredUserData, getStoredUserEmail } from "../../utils/userSession";
+import WellnessPage from "../../components/wellness/WellnessPage";
 
 const Profile_Page = () => {
-  // const [data, setData] = useState();
   const [res, setRes] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const user = getStoredUserData();
 
   useEffect(() => {
     const getResult = async () => {
@@ -15,19 +15,21 @@ const Profile_Page = () => {
         const email = getStoredUserEmail();
         if (!email) {
           setRes([]);
+          setIsLoading(false);
           return;
         }
         const results = await getPrediction(email);
-        console.log(results);
 
         if (results?.data?.message === "no testing done") {
           setRes([]);
         } else {
-          setRes(results?.data);
+          setRes(results?.data || []);
         }
       } catch (error) {
         console.log(error);
         setRes([]);
+      } finally {
+        setIsLoading(false);
       }
     };
     getResult();
@@ -45,38 +47,75 @@ const Profile_Page = () => {
     }
   };
 
-  return (
-    <>
-      <div className="profile-page-container">
-        {/* Profile Page */}
-        <h2>Results</h2>
-        {res?.length === 0 ? (
-            <p>Nothing to show</p>
-        ) : (
-            <table>
-                <tr>
-                    <th>Testing Date</th>
-                    <th>Score</th>
-                    <th>Result</th>
-                </tr>
-                {res?.length === 0 ? (
-                    <p>Nothing to show</p>
-                ) : (
-                    res.reverse().map((element) => (
-                        <>
-                            <tr>
-                                <td>{element[0]}</td>
-                                <td>{element[1]}</td>
-                                <td>{element[1] ? findClass(element[1]) : ""}</td>
-                            </tr>
-                        </>
-                    ))
-                )}
-            </table>
-        )}
+  const orderedResults = [...res].reverse();
 
-      </div>
-    </>
+  return (
+    <WellnessPage
+      className="profile-page"
+      contentClassName="profile-page__content"
+      subtitle="Your profile keeps your saved details and earlier screening history close at hand."
+    >
+      <section className="wm-grid-two profile-summary-grid reveal-up">
+        <div className="wm-panel wm-panel--hero">
+          <p className="wm-eyebrow">Profile snapshot</p>
+          <h1 className="wm-heading">{user?.name || "Wellness Monitor profile"}</h1>
+          <p className="wm-subcopy">
+            {user?.email || "Sign in to view the details tied to your saved screening history."}
+          </p>
+        </div>
+
+        <div className="wm-card profile-details-card">
+          <p className="wm-eyebrow">Saved details</p>
+          <div className="profile-detail-grid">
+            <div><strong>Mobile</strong><span>{user?.mobile || "Not available"}</span></div>
+            <div><strong>Gender</strong><span>{user?.gender || "Not available"}</span></div>
+            <div><strong>Date of birth</strong><span>{user?.dob || "Not available"}</span></div>
+            <div><strong>Age</strong><span>{user?.age || "Not available"}</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section className="wm-panel wm-panel--soft reveal-up delay-1">
+        <div className="profile-history-header">
+          <div>
+            <p className="wm-eyebrow">Result history</p>
+            <h2 className="wm-heading">Your earlier outcomes</h2>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="wm-empty-state">
+            <p>Loading your profile history...</p>
+          </div>
+        ) : orderedResults.length === 0 ? (
+          <div className="wm-empty-state">
+            <h3 className="wm-heading">Nothing to show yet</h3>
+            <p>When your screenings are saved, your result history will appear here.</p>
+          </div>
+        ) : (
+          <div className="wm-table-shell">
+            <table className="wm-data-table">
+              <thead>
+                <tr>
+                  <th>Testing Date</th>
+                  <th>Score</th>
+                  <th>Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orderedResults.map((element, index) => (
+                  <tr key={`${element[0]}-${index}`}>
+                    <td>{element[0]}</td>
+                    <td>{element[1]}</td>
+                    <td>{element[1] ? findClass(element[1]) : ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </WellnessPage>
   );
 };
 
